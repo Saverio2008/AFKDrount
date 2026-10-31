@@ -1,0 +1,7 @@
+[Desktop Entry]
+Type=Application
+Name=AFK Drount
+Exec=AFKDrount
+Icon=AFKDrount
+Terminal=false
+Categories=Game;Utility;

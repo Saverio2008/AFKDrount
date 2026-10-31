@@ -1,0 +1,23 @@
+{
+  "version": "26.1",
+  "source": "Mojang official client",
+  "manifest": "https://piston-meta.mojang.com/mc/game/version_manifest_v2.json",
+  "metadata": "https://piston-meta.mojang.com/v1/packages/90d81d9cd00c1ce55eb2b40aad4f1112bb58f12a/26.1.json",
+  "client": "https://piston-data.mojang.com/v1/objects/191771837687b766537a8c4607cb6fad79c533a1/client.jar",
+  "clientSha1": "191771837687b766537a8c4607cb6fad79c533a1",
+  "clientBytes": 38113398,
+  "inventoryIcons": 1505,
+  "iconSize": 64,
+  "defaultSkin": "skins/steve.png, unchanged from the official client",
+  "rendering": {
+    "tool": "@nodecraft/rendermite",
+    "version": "1.15.0",
+    "source": "https://github.com/nodecraft/rendermite",
+    "lighting": "modern",
+    "workers": 1,
+    "concurrency": 1,
+    "colormapSampling": "Patched temporary renderer to sample floor(coordinate * (size - 1)), matching the vanilla 0..255 colormap lookup.",
+    "runtimeDependency": false
+  },
+  "copyright": "Minecraft assets belong to Mojang and Microsoft."
+}

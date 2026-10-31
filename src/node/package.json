@@ -1,0 +1,25 @@
+{
+  "name": "afkdrount-backend",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "test": "node --test tests/*.test.mjs"
+  },
+  "dependencies": {
+    "minecraft-data": "3.119.0",
+    "mineflayer": "4.39.0",
+    "prismarine-auth": "3.1.1",
+    "prismarine-chat": "1.13.0",
+    "prismarine-nbt": "2.8.0"
+  },
+  "devDependencies": {
+    "@types/node": "22.15.1"
+  },
+  "overrides": {
+    "uuid": "11.1.1"
+  }
+}

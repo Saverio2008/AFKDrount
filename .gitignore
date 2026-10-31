@@ -1,0 +1,57 @@
+# Local IDE and Codex settings
+/.idea/
+/.codex/
+
+# CMake build output and local presets
+/cmake-build-*/
+/build/
+/build-*/
+/out/
+/CMakeCache.txt
+/CMakeFiles/
+/compile_commands.json
+/CMakeUserPresets.json
+
+# Node dependencies and package-manager caches
+node_modules/
+.npm/
+tests/
+
+# Qt local settings and generated binaries
+*.user
+*.user.*
+*.app/
+*.dSYM/
+*.o
+*.obj
+*.a
+*.dll
+*.so
+*.so.*
+*.dylib
+*.exe
+*.pdb
+
+# Logs and local runtime data
+*.log
+/accounts/
+/runs/
+/logs/
+
+# Local environment files; keep distributable examples
+.env
+.env.*
+!.env.example
+!.env.template
+
+# Local design assets
+/design/
+
+# Generated Graphify data
+/graphify-out/
+
+# macOS and Windows metadata
+.DS_Store
+._*
+Thumbs.db
+Desktop.ini

@@ -1,0 +1,216 @@
+name: Release build
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+concurrency:
+  group: release-${{ github.ref }}
+
+permissions:
+  contents: read
+
+jobs:
+  prepare:
+    name: Read release notes
+    if: ${{ !github.event.deleted }}
+    runs-on: ubuntu-24.04
+    outputs:
+      notes: ${{ steps.changelog.outputs.notes }}
+      qt_version: ${{ steps.changelog.outputs.qt_version }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Prepare the changelog and Qt source notes
+        id: changelog
+        run: |
+          cmake "-DAFK_QT_SOURCE_NOTES_OUTPUT=$RUNNER_TEMP/QT-SOURCES.md" -P cmake/QtRelease.cmake
+          python3 - <<'PY'
+          import json
+          import os
+          import re
+          from pathlib import Path
+          from uuid import uuid4
+
+          tag = os.environ["GITHUB_REF_NAME"]
+          if not re.fullmatch(r"v[0-9]+\.[0-9]+(?:\.[0-9]+)?(?:-[0-9A-Za-z.-]+)?", tag):
+              raise SystemExit(f"Expected a version tag such as v1.0-alpha or v1.0.0, got {tag}")
+
+          changelog = Path("CHANGELOG.md").read_text(encoding="utf-8")
+          sections = re.split(r"(?m)^##[ \t]+", changelog)[1:]
+          notes = []
+          for section in sections:
+              heading, _, body = section.partition("\n")
+              if heading.strip() == tag:
+                  notes.append(body.strip())
+
+          if len(notes) != 1 or not notes[0]:
+              raise SystemExit(f"CHANGELOG.md must contain one nonempty '## {tag}' section")
+
+          qt_version = json.loads(Path("licenses/qt/release.json").read_text(encoding="utf-8"))["version"]
+          if not re.fullmatch(r"[0-9]+\.[0-9]+\.[0-9]+", qt_version):
+              raise SystemExit(f"Expected a Qt release version, got {qt_version}")
+          qt_sources = (Path(os.environ["RUNNER_TEMP"]) / "QT-SOURCES.md").read_text(encoding="utf-8").strip()
+          marker = f"RELEASE_NOTES_{uuid4().hex}"
+          with Path(os.environ["GITHUB_OUTPUT"]).open("a", encoding="utf-8") as output:
+              output.write(f"qt_version={qt_version}\n")
+              output.write(f"notes<<{marker}\n{notes[0]}\n\n{qt_sources}\n{marker}\n")
+          PY
+
+  build:
+    name: ${{ matrix.platform }}
+    needs: prepare
+    runs-on: ${{ matrix.runner }}
+    permissions:
+      contents: read
+      id-token: write
+      attestations: write
+      artifact-metadata: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: macos-arm64
+            runner: macos-15
+            qt-arch: clang_64
+          - platform: windows-x64
+            runner: windows-2022
+            qt-arch: win64_msvc2022_64
+          - platform: linux-x64
+            runner: ubuntu-24.04
+            qt-arch: linux_gcc_64
+
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: src/node/package-lock.json
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - name: Install CMake and Ninja
+        run: python -m pip install cmake==4.4.2 ninja
+
+      - name: Install Linux build and deployment dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgl1-mesa-dev libxkbcommon-dev libxcb-cursor0 patchelf
+
+      - uses: jurplel/install-qt-action@v4
+        id: qt
+        with:
+          version: ${{ needs.prepare.outputs.qt_version }}
+          arch: ${{ matrix.qt-arch }}
+          setup-python: false
+
+      - name: Install backend dependencies
+        run: npm ci --prefix src/node --omit=dev
+
+      - name: Configure macOS or Linux
+        if: runner.os != 'Windows'
+        run: cmake -S . -B build-release -G Ninja -DCMAKE_BUILD_TYPE=Release "-DCMAKE_PREFIX_PATH=${{ steps.qt.outputs.qt-root-dir }}"
+
+      - name: Configure Windows
+        if: runner.os == 'Windows'
+        run: cmake -S . -B build-release -G "Visual Studio 17 2022" -A x64 "-DCMAKE_PREFIX_PATH=${{ steps.qt.outputs.qt-root-dir }}"
+
+      - name: Build, lint QML and package release
+        run: cmake --build build-release --config Release --target all_qmllint package_release --parallel 3
+
+      - name: Verify staged application
+        shell: bash
+        run: |
+          cd "out/AFKDrount/${{ matrix.platform }}"
+          case "$RUNNER_OS" in
+            macOS)
+              app=AFKDrount.app
+              codesign --verify --deep --strict "$app"
+              node="$app/Contents/MacOS/node"
+              backend="$app/Contents/Resources/backend"
+              ;;
+            Windows)
+              test -f bin/AFKDrount.exe
+              node=bin/backend/node.exe
+              backend=bin/backend
+              ;;
+            Linux)
+              test -x bin/AFKDrount
+              node=bin/backend/node
+              backend=bin/backend
+              ;;
+          esac
+          printf '%s\n' '{"command":"list"}' | "$node" "$backend/main.mjs" "$RUNNER_TEMP/afk-release-smoke"
+
+      - name: Attest release archive
+        uses: actions/attest@v4
+        with:
+          subject-path: out/AFKDrount/AFKDrount-${{ matrix.platform }}.tar.gz
+
+      - uses: actions/upload-artifact@v7
+        with:
+          path: out/AFKDrount/AFKDrount-${{ matrix.platform }}.tar.gz
+          if-no-files-found: error
+          archive: false
+          overwrite: true
+
+  release:
+    name: Publish GitHub Release
+    needs: [prepare, build]
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+      attestations: read
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: AFKDrount-*.tar.gz
+          path: release-assets
+          merge-multiple: true
+          skip-decompress: true
+
+      - name: Publish release with all three archives
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_NOTES: ${{ needs.prepare.outputs.notes }}
+        run: |
+          assets=(
+            release-assets/AFKDrount-macos-arm64.tar.gz
+            release-assets/AFKDrount-windows-x64.tar.gz
+            release-assets/AFKDrount-linux-x64.tar.gz
+          )
+          for asset in "${assets[@]}"; do
+            test -s "$asset" || { echo "Missing release archive: $asset" >&2; exit 1; }
+            gh attestation verify "$asset" --repo "$GH_REPO" \
+              --signer-workflow "$GH_REPO/.github/workflows/release-build.yml" \
+              --source-ref "$GITHUB_REF"
+          done
+
+          notes="$RUNNER_TEMP/release-notes.md"
+          printf '%s\n' "$RELEASE_NOTES" > "$notes"
+          release_flags=(--verify-tag --title "$GITHUB_REF_NAME" --notes-file "$notes")
+          if [[ "$GITHUB_REF_NAME" == *-* ]]; then
+            release_flags+=(--prerelease)
+          fi
+
+          if draft=$(gh release view "$GITHUB_REF_NAME" --json isDraft --jq .isDraft); then
+            if [[ "$draft" == true ]]; then
+              gh release upload "$GITHUB_REF_NAME" "${assets[@]}" --clobber
+              gh release edit "$GITHUB_REF_NAME" "${release_flags[@]}" --draft=false
+            else
+              echo "Release $GITHUB_REF_NAME is already published."
+            fi
+          else
+            gh release create "$GITHUB_REF_NAME" "${assets[@]}" "${release_flags[@]}"
+          fi

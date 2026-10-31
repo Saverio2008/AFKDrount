@@ -1,0 +1,15 @@
+{
+  "version": "6.12.0",
+  "modules": {
+    "qtbase": {
+      "commit": "025bdad181de241e81bf853c8a2d7bf3d19261a9",
+      "source_url": "https://download.qt.io/archive/qt/6.12/6.12.0/submodules/qtbase-everywhere-src-6.12.0.tar.xz",
+      "sha256": "a951bd163c7b80fc6b8c88d7668fb56abf91c152373e13c10666763238131307"
+    },
+    "qtdeclarative": {
+      "commit": "4332fbbb4c340463dc8cee36dda0c85d932122d8",
+      "source_url": "https://download.qt.io/archive/qt/6.12/6.12.0/submodules/qtdeclarative-everywhere-src-6.12.0.tar.xz",
+      "sha256": "311f3a2603e1973bb59baef9dfa740a376de713157d4782ee043681e889c9260"
+    }
+  }
+}

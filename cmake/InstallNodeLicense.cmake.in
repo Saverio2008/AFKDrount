@@ -1,0 +1,35 @@
+# Install the license for the Node.js executable in the staging directory.
+execute_process(
+    COMMAND "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/@installed_node_executable@" --version
+    OUTPUT_VARIABLE node_version
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+    COMMAND_ERROR_IS_FATAL ANY
+)
+if(NOT node_version MATCHES "^v[0-9]+[.][0-9]+[.][0-9]+$")
+    message(FATAL_ERROR "Cannot identify the bundled Node.js version: ${node_version}")
+endif()
+
+set(node_license "@CMAKE_CURRENT_SOURCE_DIR@/licenses/nodejs/${node_version}/LICENSE")
+if(NOT EXISTS "${node_license}")
+    set(cache_dir "@CMAKE_CURRENT_BINARY_DIR@/licenses/nodejs/${node_version}")
+    set(node_license "${cache_dir}/LICENSE")
+    if(NOT EXISTS "${node_license}")
+        file(MAKE_DIRECTORY "${cache_dir}")
+        file(DOWNLOAD "https://raw.githubusercontent.com/nodejs/node/${node_version}/LICENSE"
+            "${node_license}.tmp" TLS_VERIFY ON TIMEOUT 30 STATUS download_status)
+        list(GET download_status 0 download_code)
+        if(NOT download_code EQUAL 0)
+            file(REMOVE "${node_license}.tmp")
+            message(FATAL_ERROR "Could not obtain the Node.js ${node_version} license: ${download_status}")
+        endif()
+        file(STRINGS "${node_license}.tmp" license_header LIMIT_COUNT 1)
+        if(NOT license_header STREQUAL "Node.js is licensed for use as follows:")
+            file(REMOVE "${node_license}.tmp")
+            message(FATAL_ERROR "Unexpected license text for Node.js ${node_version}")
+        endif()
+        file(RENAME "${node_license}.tmp" "${node_license}")
+    endif()
+endif()
+
+file(INSTALL "${node_license}" TYPE FILE
+    DESTINATION "${CMAKE_INSTALL_PREFIX}/@third_party_notice_dir@/licenses/nodejs/${node_version}")
