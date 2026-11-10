@@ -8,7 +8,7 @@
 #include <QtQmlIntegration/qqmlintegration.h>
 #include <functional>
 
-class MinecraftImages final : public QObject
+class MinecraftImages : public QObject
 {
     Q_OBJECT
     QML_ELEMENT

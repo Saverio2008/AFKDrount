@@ -10,7 +10,7 @@ class AccountStore;
 class GameCatalog;
 class InstanceStore;
 
-class SessionStore final : public QObject
+class SessionStore : public QObject
 {
     Q_OBJECT
     QML_ELEMENT

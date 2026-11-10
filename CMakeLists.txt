@@ -107,6 +107,10 @@ set_target_properties(AFKDrount PROPERTIES
     MACOSX_BUNDLE_GUI_IDENTIFIER personal.MineflayerAFKHelper
     WIN32_EXECUTABLE ON
 )
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    # The AFKDrount QML module already uses the same name in the build root.
+    set_target_properties(AFKDrount PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/bin")
+endif()
 
 set(app_icon_dir "${CMAKE_CURRENT_SOURCE_DIR}/src/assets/app")
 qt_add_resources(AFKDrount "application_icon"

@@ -41,14 +41,14 @@ jobs:
 
           changelog = Path("CHANGELOG.md").read_text(encoding="utf-8")
           sections = re.split(r"(?m)^##[ \t]+", changelog)[1:]
-          notes = []
+          notes = [] if sections else [changelog.strip()]
           for section in sections:
               heading, _, body = section.partition("\n")
               if heading.strip() == tag:
                   notes.append(body.strip())
 
           if len(notes) != 1 or not notes[0]:
-              raise SystemExit(f"CHANGELOG.md must contain one nonempty '## {tag}' section")
+              raise SystemExit(f"CHANGELOG.md must contain plain release notes or one nonempty '## {tag}' section")
 
           qt_version = json.loads(Path("licenses/qt/release.json").read_text(encoding="utf-8"))["version"]
           if not re.fullmatch(r"[0-9]+\.[0-9]+\.[0-9]+", qt_version):
@@ -113,6 +113,8 @@ jobs:
           version: ${{ needs.prepare.outputs.qt_version }}
           arch: ${{ matrix.qt-arch }}
           setup-python: false
+          # aqtinstall 3.3.0 looks in the wrong SDK directory for Qt 6.11+ on Windows x64.
+          aqtsource: ${{ runner.os == 'Windows' && 'git+https://github.com/miurahr/aqtinstall.git@8c3695d4a4e1ceabf6a74dc6c79681656dc6b74b' || '' }}
 
       - name: Install backend dependencies
         run: npm ci --prefix src/node --omit=dev

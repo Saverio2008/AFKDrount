@@ -5,7 +5,7 @@
 #include <QObject>
 #include <QtQmlIntegration/qqmlintegration.h>
 
-class Clipboard final : public QObject
+class Clipboard : public QObject
 {
     Q_OBJECT
     QML_ELEMENT

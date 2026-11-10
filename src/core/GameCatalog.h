@@ -6,7 +6,7 @@
 #include <QObject>
 #include <QtQmlIntegration/qqmlintegration.h>
 
-class GameCatalog final : public QObject
+class GameCatalog : public QObject
 {
     Q_OBJECT
     QML_ELEMENT

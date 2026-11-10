@@ -8,6 +8,6 @@ AFK Drount 是一款基于 Mineflayer 的 Minecraft Java 版挂机工具。你�
 
 ## Disclaimer / 声明
 
-AFK Drount is an independent third-party tool. It is neither approved by nor affiliated with Mojang or Microsoft.
+AFK Drount is an independent, unofficial tool with no affiliation with Mojang or Microsoft.
 
-AFK Drount 是独立的第三方工具，未经 Mojang 或 Microsoft 批准，与两者无关联。
+AFK Drount 是一款独立的非官方工具，与 Mojang 和 Microsoft 均无关联。

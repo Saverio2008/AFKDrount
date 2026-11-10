@@ -8,7 +8,7 @@
 #include <QVariantList>
 #include <QtQmlIntegration/qqmlintegration.h>
 
-class AccountStore final : public QObject
+class AccountStore : public QObject
 {
     Q_OBJECT
     QML_ELEMENT

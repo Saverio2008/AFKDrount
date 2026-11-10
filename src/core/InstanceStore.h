@@ -4,7 +4,7 @@
 #include <QVariantList>
 #include <QtQmlIntegration/qqmlintegration.h>
 
-class InstanceStore final : public QObject
+class InstanceStore : public QObject
 {
     Q_OBJECT
     QML_ELEMENT
